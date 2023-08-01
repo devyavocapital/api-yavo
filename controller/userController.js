@@ -1,31 +1,28 @@
-const mysql = require("mysql");
+const { fnSequelize } = require("../db/config");
 
-const connection = mysql.createConnection({
-	host: process.env.HOST_DATABASE,
-	user: process.env.USER_DATABASE,
-	password: process.env.PASS_DATABASE,
-	database: process.env.NAME_DATABASE,
-	port: process.env.PORT_DATABASE,
-});
+exports.addRegisterUser = async (req, res) => {
+	const sequelize = fnSequelize();
 
-const getId = () => {
-	const date = Date.now();
-	return date;
-};
+	const {
+		nombre,
+		apPaterno,
+		apMaterno,
+		email,
+		telefono,
+		seguro,
+		numeroSeguro,
+		terms,
+	} = req.body;
 
-exports.addRegisterUser = (req, res) => {
-	const { nombre, apPaterno, apMaterno, email, telefono, seguro } = req.body;
-	const id = getId();
-
-	const query = `insert into users values ('${id}', '${nombre}', '${apPaterno}', '${apMaterno}', '${email}', '${telefono}', '${seguro}')`;
-
-	connection.query(query, (err, rows, fields) => {
-		if (err) return err;
-
-		// console.log(rows.affectedRows);
-		res.json({
-			msg: "User added correctly",
-			data: { id, nombre, apPaterno, apMaterno, email, telefono, seguro },
-		});
-	});
+	try {
+		const queryResult = await sequelize.query(
+			`EXEC SP_PROSPECTOS ${nombre}, ${apPaterno}, ${apMaterno}, '${email}', ${telefono}, ${seguro}, ${numeroSeguro}, ${terms}`,
+		);
+		sequelize.close();
+		res.json({ queryResult });
+	} catch (error) {
+		// console.error();
+		const errorLog = `"Unable to connect to the database:", ${error.original}`;
+		res.json({ error: errorLog });
+	}
 };
